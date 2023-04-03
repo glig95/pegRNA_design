@@ -1,5 +1,5 @@
 # pegRNA_design
-Pipeline for pegRNA desing for mutational tiling of LDLR exon 4
+
 This is a computational pipeline that designs pegRNAs for comprehensive mutational scanning of a given coding sequence. The pipeline designed all possible pegRNAs that could be used for a desired edit and such exhaustive set of pegRNAs can then used as an input for PRIDICT, to select the pegRNAs that would lead to high-efficiency genome editing.
 The code iterates over all pairs of existing amino-acid (AA) and desired mutant codons. For mutant codons, we consider all synonymous, missense and nonsense variants that are different from the existing codon (in total 63 for each AA). Then, for a given AA position in the exon, we search for the nearby PAM sequences (“NGG”, in practice “GG”) that are located up to 17 bp upstream of the desired AA change on the sense strand, or 17 bp downstream, on the antisense strand. When a potential PAM sequence is found, we proceed with the following steps:
 1.	If possible, find a synonymous mutation that disrupts at least one G nucleotide in the PAM sequence to be introduced with pegRNA, to avoid repeated editing of the genome. 
