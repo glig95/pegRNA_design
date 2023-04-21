@@ -6,7 +6,7 @@ The code iterates over all pairs of existing amino-acids (AAs) and desired mutan
 1.	If possible, find a synonymous mutation that disrupts at least one G nucleotide in the PAM sequence to be introduced with pegRNA, to avoid repeated editing of the genome. 
 2.	If there are no such synonymous mutations, search for possible synonymous mutations inside the seed sequence, i.e. the 3 nucleotides between the PAM and the nick-site. 
 
-In the specific case of LDLR exo 4, all considered PAM and seed mutations were inside the coding sequences. In only two cases (D70M and D70W), out of 83*63 = 5229, neither requirement 1. nor 2. could be satisfied for any proximal PAM region.
+In the specific case of LDLR exo 4, all considered PAM and seed mutations were inside the coding sequences. In only two cases (D70M and D70W), out of 83*63 = 5229, either requirement 1. or 2. could be satisfied for any proximal PAM region.
 
 To ensure that potential sequencing errors can be easily distinguished from the successful genome edits, we imposed a requirement that the original and mutated exon 4 region must differ in at least 2 nucleotides (have Hamming distance bigger than 1). Introducing at least one nucleotide mutation in the AA of interest and one in the PAM region or the seed region already satisfied this requirement. Only in the special cases where PAM sequence was inside the AA that is being mutated, and the introduced mutation disrupts the PAM sequence too (e.g. glycine GGC into AGC), the Hamming distance was 1. In these situations, we introduced an additional synonymous mutation in the region that is 1 to 3 AAs upstream of the AA of interest. 
 
