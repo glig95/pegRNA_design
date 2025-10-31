@@ -2,7 +2,9 @@
 
 This repository contains a computational pipeline that designs prime-editing guide RNAs (pegRNAs) for comprehensive mutational scanning of a given coding sequence. The pipeline generates pegRNAs capable of mutating each amino acid in the coding sequence into all other codons (exhaustive codon-level enumeration), producing a candidate set that can be scored with PRIDICT/PRIDICT2.0 (https://www.pridict.it/) to select pegRNAs with high predicted editing efficiency. After running PRIDICT on all designed pegRNAs, the best pegRNA is chosen for each of the 20 possible amino acid substitutions at every position. The pipeline has been run and tested on exon 4 of the human low-density lipoprotein receptor (LDLR).
 
-## Design Strategy
+## Design pegRNAs (design_pegrna.py)
+
+Design strategy:
 
 **Exhaustive codon enumeration.** For each amino-acid (AA) position, the code iterates over all pairs of the existing AA and desired mutant codons. For mutant codons, all synonymous, missense, and nonsense variants that differ from the existing codon are considered—up to 63 codon alternatives per AA.
 
@@ -19,7 +21,7 @@ This repository contains a computational pipeline that designs prime-editing gui
 - **Met** and **Trp**, each encoded by a single codon, naturally have no synonymous alternatives; no synonymous mutations are added in those instances.
 - If no suitable NGG PAM is found within ±17 bp, the search is extended to ±35 bp for that target.
 
-## PRIDICT post-processing and Final Selection
+## PRIDICT post-processing and Final Selection (load_pridict_output.py)
 
 1. **Score all candidates.** All (variant, PAM) designs are formatted and scored with PRIDICT/PRIDICT2.0 (the code is adjusted to incorporate differences in the output between PRIDICT and PRIDICT2.0).
 2. **Filter by spacer.** Because PRIDICT may construct pegRNAs using any nearby PAM (i.e., spacer is not predetermined), post-processing is run to find those PRIDICT sequences whose spacer sequence matches the input spacer defined at design time.
