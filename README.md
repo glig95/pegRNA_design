@@ -1,17 +1,54 @@
-# pegRNA_design
+# Prime Editing pegRNA Library Construction
 
-'pegRNA_design_for_tiling' is a computational pipeline that designs prime-editing guide RNAs (pegRNAs) for comprehensive mutational scanning of a given coding sequence. The code designs pegRNAs that can be used for mutating each amino-acid in the coding sequence into all other codons. Such an exhaustive set of pegRNAs can then be used as an input for PRIDICT, a tool that infers the efficiency of the prime editing based on the pegRNA, to select the pegRNAs that would lead to high-efficiency genome editing. After running the PRIDICT for all designed pegRNAs, the best pegRNA is chosen for each of the 21 possible mutations for all amino-acid mutations in the given sequence. The code was run and tested on human low-density lipoproteinn receptor (LDLR) exon 4.
+This repository contains a computational pipeline that designs prime-editing guide RNAs (pegRNAs) for comprehensive mutational scanning of a given coding sequence. The pipeline generates pegRNAs capable of mutating each amino acid in the coding sequence into all other codons (exhaustive codon-level enumeration), producing a candidate set that can be scored with PRIDICT/PRIDICT2.0 (https://www.pridict.it/) to select pegRNAs with high predicted editing efficiency. After running PRIDICT on all designed pegRNAs, the best pegRNA is chosen for each of the 20 possible amino acid substitutions at every position. The pipeline has been run and tested on exon 4 of the human low-density lipoprotein receptor (LDLR).
 
-The code iterates over all pairs of existing amino-acids (AAs) and desired mutant codons. For mutant codons, we consider all synonymous, missense, and nonsense variants that are different from the existing codon (in total 63 for each AA). Then, for a given AA position in the exon, we search for the nearby PAM sequences (“NGG”, in practice “GG”) that are located up to 17 bp upstream of the desired AA change on the sense strand, or 17 bp downstream, on the antisense strand. When a potential PAM sequence is found, we proceed with the following steps:
-1.	If possible, find a synonymous mutation that disrupts at least one G nucleotide in the PAM sequence to be introduced with pegRNA, to avoid repeated editing of the genome. 
-2.	If there are no such synonymous mutations, search for possible synonymous mutations inside the seed sequence, i.e. the 3 nucleotides between the PAM and the nick-site. 
+## Design Strategy
 
-To ensure that potential sequencing errors can be easily distinguished from the successful genome edits, we imposed a requirement that the original and mutated exon 4 region must differ in at least 2 nucleotides (i.e. have Hamming distance bigger than 1). Introducing at least one nucleotide mutation in the AA of interest and one in the PAM region or the seed region already satisfied this requirement. Only in the special cases where the PAM sequence was inside the AA that is being mutated, and the introduced mutation disrupted the PAM sequence too (e.g. glycine GGC into AGC), the Hamming distance was 1. In these situations, we introduced an additional synonymous mutation in the region that is 1 to 3 AAs upstream of the AA of interest. 
+**Exhaustive codon enumeration.** For each amino-acid (AA) position, the code iterates over all pairs of the existing AA and desired mutant codons. For mutant codons, all synonymous, missense, and nonsense variants that differ from the existing codon are considered—up to 63 codon alternatives per AA.
 
-For some AAs, there were multiple synonymous mutations that could disrupt PAM, or seed, or ensure that the Hamming distance is bigger than 1. In such cases, we listed all of them to give more opportunities of finding a pegRNA with high editing efficiency by PRIDICT. On the other hand, in certain cases, some AAs are encoded by only one triplet of nucleotides, and we did not include any synonymous mutations for them in those cases. Lastly, for certain amino-acids we could not find any PAMs that are 17 bp away from the mutation of interest or closer. In these cases only, we extended the search for PAM sequences to up to 35 bp away from the mutation.
+**Nearby PAM discovery.** For each AA position and desired codon change, the code searches for **NGG** PAMs (“GG” in practice) in the vicinity of the codon: up to **17 bp upstream** on the sense strand or **17 bp downstream** on the antisense strand. Each valid PAM defines a candidate spacer for a pegRNA that installs the desired edit.
 
-After PRIDICT was run on such sequences, we loaded the PRIDICT output using 'Loading_PRIDICT_output' notebook. Briefly, for each designed mutation we took the best pegRNA as redesigned by PRIDICT. We kept only the nucleotide changes that lead to optimal (most frequent in humans) codons. The exceptions to this were the synonymous mutations (e.g. change of L to L) that already had the optimal codon in the original sequence - for them, we took the second-best codon. For methionine and tryptophan codons, which are always coded by the same triplet, we did not introduce synonymous mutations. After keeping only the best codons possible, we still had multiple options for each mutation. This was due to several possibilities for nearby PAMS and several possibilities for introducing synonymous mutations (that were used to satisfy Hamming distance bigger than 1 requirement). Then we iterated over these designs for each desired amino-acid change at a specific position and kept the one with the highest editing score calculated based on PRIDICT as the final pegRNA. 
+**PAM/seed disruption and Hamming distance.**
+- **Prefer PAM disruption via a synonymous change.** If possible, introduce a synonymous mutation that disrupts at least one G in the NGG PAM to avoid repeated editing of the same locus after installation.
+- **If PAM disruption is not possible, disrupt the seed.** Search for synonymous changes within the seed sequence (the three nucleotides between the PAM and the nick site) to prevent re-targeting.
+- **Enforce edit identifiability.** To distinguish genuine edits from potential sequencing errors, require a **Hamming distance ≥ 2** between the original and mutated sequences. When the combination of the AA-changing mutation and PAM/seed-disrupting mutation already yields ≥2 nucleotide differences, no further synonymous changes are added.
+- **Special case when PAM lies within the edited codon.** If the PAM overlaps the AA being mutated and the AA-changing edit itself disrupts the PAM (e.g., GGC, Glycine → AGC, Glycine), the Hamming distance may be 1. In these cases, add an additional synonymous mutation within 1–3 upstream AAs to reach Hamming distance ≥ 2.
 
-Given that PRIDICT constructs pegRNAs by using any nearby PAM sequences, rather than having a predefined PAM, we filtered out from the PRIDICT output the pegRNAs whose spacer sequence did not match the spacer sequence defined by 'pegRNA_design_for_tiling'. In certain cases, none of the PRIDICT output pegRNA had the intended spacer, but given the large redundancy in the total number of pegRNA designs for a given amino-acid substitution, this did not lead to not having any pegRNAs for a given mutation. As a part of 'Loading_PRIDICT_output' we also performed additional verifications for ensuring that the Hamming distance is bigger than 1 and that the intended amino-acid change matches the actual one based on the pegRNA sequence.
+**Multiplicity and amino-acid edge cases.**
+- When multiple synonymous options can disrupt the PAM or seed and/or satisfy Hamming ≥ 2, all such options are retained so PRIDICT can later prioritize the most efficient design.
+- **Met** and **Trp**, each encoded by a single codon, naturally have no synonymous alternatives; no synonymous mutations are added in those instances.
+- If no suitable NGG PAM is found within ±17 bp, the search is extended to ±35 bp for that target.
 
-In the specific case of LDLR exon 4, all considered PAM and seed mutations were inside the coding sequences. 
+## PRIDICT post-processing and Final Selection
+
+1. **Score all candidates.** All (variant, PAM) designs are formatted and scored with PRIDICT/PRIDICT2.0 (the code is adjusted to incorporate differences in the output between PRIDICT and PRIDICT2.0).
+2. **Filter by spacer.** Because PRIDICT may construct pegRNAs using any nearby PAM (i.e., spacer is not predetermined), post-processing is run to find those PRIDICT sequences whose spacer sequence matches the input spacer defined at design time.
+3. **Codon optimality.** For each designed mutation, keep nucleotide changes that lead to optimal (most frequent in humans) codons. Exception: if the original AA was encoded by the optimal codon, select the *second-best* synonymous codon instead.
+4. **Resolve multiple valid options.** Multiple candidates may remain per AA change due to different PAM/seed-disrupting choices and/or synonymous additions for Hamming distance. Iterate across all remaining options and select the single pegRNA with the highest PRIDICT editing score as the final design.
+5. **Final checks.** As part of loading PRIDICT outputs, the pipeline re-verifies that Hamming distance ≥ 2 and that the intended AA change matches the actual change implied by the pegRNA sequence and warns the user if this is not the case. We verified that no designs are excluded at this stage.
+
+In the specific case of LDLR exon 4, all considered PAM and seed mutations were inside the coding sequences.
+
+## Inputs
+
+The code expects the following inputs (files or variables set at the top of the scripts):
+
+- **Target coding sequence**
+  - A FASTA file with the coding DNA sequence for the exon/CDS to edit.
+
+- **Target set specification**
+  - Either provide an explicit list of desired amino-acid changes (table/CSV), or let the script enumerate all possible AA substitutions at each position.
+
+- **PAM search parameters**
+  - Window: by default ±17 bp around the target codon (with an optional extension in case PAM is not found).
+
+- **Codon preference table (optional)**
+  - The post-processing step find the optimal for each edit. The script contains an internal mapping of codons to the frequency of codon usage in humans.
+
+- **PRIDICT outputs**
+  - CSV exports from PRIDICT or PRIDICT2.0 for the designed candidate set.
+  - The loader expects standard PRIDICT columns such as: `Spacer`, `PAM`, `Strand orientation`, `PBSlength`, `RTlength`, `Genomic index`, `ORF index`, `Seed mutated`, `Total Hamming distance`, `Original_Sequence`, `Edited_Sequence`, and a prediction/score column.
+
+- **(Optional) Genomic↔ORF correspondence file**
+  - If you already have a CSV mapping genomic indices to ORF indices, the scripts can read it directly; otherwise, the helpers can generate it from your gDNA and ORF inputs.
+
