@@ -6,9 +6,9 @@ This repository contains a computational pipeline that designs prime-editing gui
 
 Design strategy:
 
-**Exhaustive codon enumeration.** For each amino-acid (AA) position, the code iterates over all pairs of the existing AA and desired mutant codons. For mutant codons, all synonymous, missense, and nonsense variants that differ from the existing codon are considered—up to 63 codon alternatives per AA.
+- **Exhaustive codon enumeration.** For each amino-acid (AA) position, the code iterates over all pairs of the existing AA and desired mutant codons. For mutant codons, all synonymous, missense, and nonsense variants that differ from the existing codon are considered—up to 63 codon alternatives per AA.
 
-**Nearby PAM discovery.** For each AA position and desired codon change, the code searches for **NGG** PAMs (“GG” in practice) in the vicinity of the codon: up to **17 bp upstream** on the sense strand or **17 bp downstream** on the antisense strand. Each valid PAM defines a candidate spacer for a pegRNA that installs the desired edit.
+- **Nearby PAM discovery.** For each AA position and desired codon change, the code searches for **NGG** PAMs (“GG” in practice) in the vicinity of the codon: up to **17 bp upstream** on the sense strand or **17 bp downstream** on the antisense strand. Each valid PAM defines a candidate spacer for a pegRNA that installs the desired edit.
 
 **PAM/seed disruption and Hamming distance.**
 - **Prefer PAM disruption via a synonymous change.** If possible, introduce a synonymous mutation that disrupts at least one G in the NGG PAM to avoid repeated editing of the same locus after installation.
